@@ -1,6 +1,10 @@
 import numpy as np
+import time
+from typing import List
+from matplotlib import pyplot as plt
+import json
 
-def read_sketches(classes: list[str], examples_per_class: int)-> np.array:
+def read_sketches(classes: List[str], examples_per_class: int)-> np.array:
     """
     Read quickdraw data
     """
@@ -40,7 +44,7 @@ def plot_sketch(sketch, title=""):
     plt.axis('equal')
     plt.title(title)
 
-    
+
 def preprocess_sketches(sketches, shuffle=True, diff=True, max_len=None):
 
     for i, sketch in enumerate(sketches):
