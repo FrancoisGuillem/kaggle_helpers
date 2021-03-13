@@ -3,7 +3,7 @@ import time
 from typing import List
 from matplotlib import pyplot as plt
 import json
-import tf.keras as keras
+import tensorflow.keras as keras
 
 def read_sketches(classes: List[str], examples_per_class: int)-> np.array:
     """
@@ -90,7 +90,7 @@ def plot_sketch_processed(sketch, title="", diff=True):
 
 
 class DataIterator(keras.utils.Sequence):
-    def __init__(self, data, task_type, batch_size=64, max_len=None, shuffle_lines=True):
+    def __init__(self, data, task_type, batch_size=64, max_len=None, shuffle_lines=False):
         self.data = data
         self.task_type = task_type
         self.batch_size = batch_size
@@ -118,3 +118,10 @@ class DataIterator(keras.utils.Sequence):
 
     def shuffle(self):
         np.random.shuffle(self.data)
+
+
+def train_valid_split(data, task_type, batch_size=64, max_len=None, shuffle_lines=False, validation_split=0.2):
+    split_idx = int(len(data) * validation_split)
+    valid = DataIterator(data[np.arange(split_idx)], task_type, batch_size, max_len, shuffle_lines)
+    train = DataIterator(data[np.arange(split_idx, len(data))], task_type, batch_size, max_len, shuffle_lines)
+    return train, valid
