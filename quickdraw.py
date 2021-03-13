@@ -3,6 +3,7 @@ import time
 from typing import List
 from matplotlib import pyplot as plt
 import json
+import tf.keras as keras
 
 def read_sketches(classes: List[str], examples_per_class: int)-> np.array:
     """
@@ -64,7 +65,7 @@ def preprocess_sketches(sketches, shuffle=True, diff=True, max_len=None):
     if max_len is None:
         max_len = np.max([x.shape[0] for x in sketches])
 
-    sketches = keras.preprocessing.sequence.pad_sequences(sketches, max_len + 1, value=0, dtype="float32", padding="post")
+    sketches = keras.preprocessing.sequence.pad_sequences(sketches, max_len + (1 if diff else 0), value=0, dtype="float32", padding="post")
 
     # scale all variable so that their domain is [-1, 1]
     if diff:
@@ -83,6 +84,37 @@ def plot_sketch_processed(sketch, title="", diff=True):
     if diff:
         sketch = np.copy(sketch)
         sketch[:,0:2] = np.cumsum(sketch[:,0:2], axis=0)
-        sketch[:, 2] = (sketch[:, 2] + 1) / 2
-    lines = np.split(sketch, np.where(sketch[:,2] < 0.5)[0][1:], axis=0)
+
+    lines = np.split(sketch, np.where(sketch[:,2] < 0)[0][1:], axis=0)
     plot_sketch(lines, title)
+
+
+class DataIterator(keras.utils.Sequence):
+    def __init__(self, data, task_type, batch_size=64, max_len=None, shuffle_lines=True):
+        self.data = data
+        self.task_type = task_type
+        self.batch_size = batch_size
+        self.max_len = max_len
+        self.shuffle_lines = shuffle_lines
+        self.idx = np.arange(len(data))
+
+    def __len__(self):
+        return len(self.data)// self.batch_size
+
+    def __getitem__(self, idx):
+        batch = self.data[(idx*self.batch_size):((idx+1)*self.batch_size)]
+        batch_X = preprocess_sketches([x[0] for x in batch], self.shuffle_lines, True, self.max_len)
+
+        if self.task_type == "classification":
+            batch_Y = np.array([x[1] for x in batch])
+            return batch_X, batch_Y
+        elif self.task_type == "ts":
+            return batch_X[: ,:-1 , :], batch_X[: ,1: , :]
+        elif self.task_type == "gen":
+            return batch_X, batch_X
+
+    def on_epoch_end(self):
+        self.shuffle()
+
+    def shuffle(self):
+        np.random.shuffle(self.data)
