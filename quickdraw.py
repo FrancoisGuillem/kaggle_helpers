@@ -90,12 +90,13 @@ def plot_sketch_processed(sketch, title="", diff=True):
 
 
 class DataIterator(keras.utils.Sequence):
-    def __init__(self, data, task_type, batch_size=64, max_len=None, shuffle_lines=False):
+    def __init__(self, data, task_type, batch_size=64, max_len=None, shuffle_lines=False, diff=True):
         self.data = data
         self.task_type = task_type
         self.batch_size = batch_size
         self.max_len = max_len
         self.shuffle_lines = shuffle_lines
+        self.diff = diff
         self.idx = np.arange(len(data))
 
     def __len__(self):
@@ -103,7 +104,7 @@ class DataIterator(keras.utils.Sequence):
 
     def __getitem__(self, idx):
         batch = self.data[(idx*self.batch_size):((idx+1)*self.batch_size)]
-        batch_X = preprocess_sketches([x[0] for x in batch], self.shuffle_lines, True, self.max_len)
+        batch_X = preprocess_sketches([x[0] for x in batch], self.shuffle_lines, self.diff, self.max_len)
 
         if self.task_type == "classification":
             batch_Y = np.array([x[1] for x in batch])
@@ -120,8 +121,8 @@ class DataIterator(keras.utils.Sequence):
         np.random.shuffle(self.data)
 
 
-def train_valid_split(data, task_type, batch_size=64, max_len=None, shuffle_lines=False, validation_split=0.2):
+def train_valid_split(data, task_type, batch_size=64, max_len=None, shuffle_lines=False, diff=True, validation_split=0.2):
     split_idx = int(len(data) * validation_split)
-    valid = DataIterator(data[np.arange(split_idx)], task_type, batch_size, max_len, shuffle_lines)
-    train = DataIterator(data[np.arange(split_idx, len(data))], task_type, batch_size, max_len, shuffle_lines)
+    valid = DataIterator(data[np.arange(split_idx)], task_type, batch_size, max_len, shuffle_lines, diff)
+    train = DataIterator(data[np.arange(split_idx, len(data))], task_type, batch_size, max_len, shuffle_lines, diff)
     return train, valid
