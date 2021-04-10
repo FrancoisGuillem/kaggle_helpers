@@ -70,12 +70,27 @@ def preprocess_sketches(sketches, shuffle=True, diff=True, max_len=None):
     # scale all variable so that their domain is [-1, 1]
     if diff:
         sketches[:,:,0:2] = sketches[:,:,0:2] / 255
+        sketches = data_augmentation(sketches, transpose=False)
     else:
         sketches[:,:,0:2] = sketches[:,:,0:2] / 127.5 - 1
+        sketches = data_augmentation(sketches, transpose=True)
     sketches[:,:,2] = sketches[:,:,2] * 2 - 1
 
     return sketches
 
+
+def data_augmentation(sketches, min_scale=0.8, transpose=False):
+    scale = min_scale + (1 - min_scale) * float(np.random.rand(1))
+    print(scale)
+    sketches[:,:,0:2] = sketches[:,:,0:2] * scale
+
+    if transpose:
+        d = (1 - scale) * (np.random.rand(2) * 2 - 1)
+        print(d)
+        sketches[:,:,0] = sketches[:,:,0] + d[0]
+        sketches[:,:,1] = sketches[:,:,1] + d[1]
+
+    return sketches
 
 def plot_sketch_processed(sketch, title="", diff=True):
     """
